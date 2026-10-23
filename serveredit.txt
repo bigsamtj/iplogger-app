@@ -1,0 +1,40 @@
+const express = require('express');
+const axios = require('axios');
+const app = express();
+
+app.use(express.json());
+
+// Konfigurasi Telegram Bot
+const TELEGRAM_BOT_TOKEN = 'MASUKKAN_BOT_TOKEN_KAMU_DISINI';
+const TELEGRAM_CHAT_ID = 'MASUKKAN_CHAT_ID_KAMU_DISINI';
+
+// Fungsi helper untuk mengirim pesan ke Telegram
+async function sendTelegramNotification(message) {
+    try {
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await axios.post(url, {
+            chat_id: TELEGRAM_CHAT_ID,
+            text: message,
+            parse_mode: 'Markdown'
+        });
+    } catch (error) {
+        console.error('Gagal mengirim ke Telegram:', error.response?.data || error.message);
+    }
+}
+
+// Contoh Endpoint untuk menerima data dan meneruskannya ke Telegram
+app.post('/api/submit', async (req, res) => {
+    const { inputData } = req.body;
+    
+    // Format pesan yang akan dikirim ke bot Telegram
+    const notificationText = `*Data Baru Diterima!*\n\n- Data: ${inputData}\n- Waktu: ${new Date().toLocaleString()}`;
+
+    // Kirim notifikasi ke Telegram
+    await sendTelegramNotification(notificationText);
+
+    res.json({ status: 'success', message: 'Data berhasil diproses dan dikirim ke Telegram.' });
+});
+
+app.listen(3000, () => {
+    console.log('Server berjalan di port 3000');
+});
