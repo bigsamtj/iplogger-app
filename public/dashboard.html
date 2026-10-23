@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracking Logs</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">&larr; Kembali ke Dashboard</a>
+        <h1 id="pageTitle">Logs for /t/...</h1>
+        <p>Target Redirect: <a id="targetLink" href="#" target="_blank">-</a></p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Waktu</th>
+                    <th>IP Address</th>
+                    <th>User Agent</th>
+                    <th>Lokasi (Geo-IP)</th>
+                </tr>
+            </thead>
+            <tbody id="logsTableBody">
+                <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Memuat log...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const slug = urlParams.get('slug');
+
+        if (!slug) {
+            window.location.href = 'index.html';
+        }
+
+        async function fetchLogs() {
+            try {
+                const res = await fetch(`/api/logs/${slug}`);
+                const data = await res.json();
+
+                if (!data.success) {
+                    alert('Link tidak ditemukan.');
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                document.getElementById('pageTitle').innerText = `Logs for /t/${slug}`;
+                const targetLink = document.getElementById('targetLink');
+                targetLink.href = data.targetUrl;
+                targetLink.innerText = data.targetUrl;
+
+                const tbody = document.getElementById('logsTableBody');
+                if (data.logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Belum ada target yang mengakses link ini.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.logs.map(log => `
+                    <tr>
+                        <td>${new Date(log.time).toLocaleString()}</td>
+                        <td><code>${log.ip}</code></td>
+                        <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${log.userAgent}">${log.userAgent}</td>
+                        <td>${log.location}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Gagal memuat log:', err);
+            }
+        }
+
+        fetchLogs();
+        // Refresh log otomatis tiap 5 detik
+        setInterval(fetchLogs, 5000);
+    </script>
+</body>
+</html>
