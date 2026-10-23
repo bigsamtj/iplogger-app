@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPLogger Interface Prototype</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>IPLogger / Tracker Dashboard</h1>
+        <p>Masukkan URL target untuk menghasilkan link pelacakan.</p>
+        
+        <form id="createForm">
+            <div class="form-group">
+                <input type="text" id="targetUrl" placeholder="https://example.com" required>
+                <button type="submit">Create Link</button>
+            </div>
+        </form>
+
+        <h2>Active Links</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Slug / ID</th>
+                    <th>Target URL</th>
+                    <th>Tracking Link</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="linksTableBody">
+                <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Memuat data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function fetchLinks() {
+            try {
+                const res = await fetch('/api/links');
+                const links = await res.json();
+                const tbody = document.getElementById('linksTableBody');
+                
+                if (Object.keys(links).length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Belum ada link yang dibuat</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = Object.entries(links).map(([slug, data]) => `
+                    <tr>
+                        <td><code>${slug}</code></td>
+                        <td><a href="${data.targetUrl}" target="_blank">${data.targetUrl}</a></td>
+                        <td><code>${window.location.origin}/t/${slug}</code></td>
+                        <td><a href="dashboard.html?slug=${slug}">View Logs</a></td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Gagal memuat link:', err);
+            }
+        }
+
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const targetUrl = document.getElementById('targetUrl').value;
+
+            const res = await fetch('/api/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetUrl })
+            });
+
+            if (res.ok) {
+                document.getElementById('targetUrl').value = '';
+                fetchLinks();
+            }
+        });
+
+        fetchLinks();
+    </script>
+</body>
+</html>
